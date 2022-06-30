@@ -11,19 +11,35 @@ module MazeRunner
   # Holds the Maze object being used in the game. Initialized to nil.
   $maze = nil
 
-  # Displays instructions for creating a maze during the start of the game.
-  # The player is able to enter specifications for the width and height of the
-  # maze, in the format <h> <w>. 
-  CREATE_INS =
+  # Displays instructions for choosing an algorithm to create the maze.
+  # The player is able to choose from the following options:
+  # - +<1>+ : Use Randomize Depth-First Search {#create_rDFS}
+  # - +<2>+ : Use Randomize Krukal's Algorithm {#create_rKruskal}
+  #
+  # @see MazeGenerator
+  CHOOSE_INS =
     ["+===============================================================+\n",
-     "|                       " +
-     "MAZE; the game v1.0".light_red +
-     "                     |\n",
+     "|                 " +
+     " Welcome to MAZE; the game v1.0".light_red +
+     "               |\n",
      "+===============================================================+\n",
      "|                     " +
      "made by: Samuel Kosasih".light_yellow +
      "                   |\n",
      "+===============================================================+\n",
+     "| Choose Algorithm for maze creation:                           |\n",
+     "|                                                               |\n",
+     "| <" + "1".light_green +
+     ">: Depth-First Search (Long Corridors)                      |\n",
+     "| <" + "2".light_cyan +
+     ">: Kruskal's (More Dead Ends)                               |\n",
+     "+===============================================================+\n"]
+
+  # Displays instructions for creating a maze during the start of the game.
+  # The player is able to enter specifications for the width and height of the
+  # maze, in the format <h> <w>.
+  CREATE_INS =
+    ["+===============================================================+\n",
      "| Specify height and width of maze in the format <" +
      "h".light_red + "> <" + "w".light_green + ">." +
      "       |\n",
@@ -205,39 +221,72 @@ module MazeRunner
   # @see #MazeGenerator
   def create
     while (true)
-      # specify instructions
+      # specify instructions for choosing an algorithm
       puts
-      f_print(CREATE_INS, 0, true)
+      f_print(CHOOSE_INS, 0, true)
       print "\n=> "
 
-      # retrieve input
-      inp = STDIN.gets.chomp.downcase
+      inp = STDIN.gets.chomp.downcase           # retrieve input
 
-      # valid input
-      if (inp =~ /([0-9]+)\s?([0-9]+)?/)
-        puts
-        f_print(["--- CREATING MAZE... ---\n"], 0, false)
-        while (true)
-          # create graph using randomized DFS
-          $maze = Maze.new(create_rDFS($1.to_i, ($2 ? $2.to_i : $1.to_i)))
-
-          # recreate maze if unsolvable
-          if (!$maze.solvable) then next end
-
-          # print result maze
-          f_print(pretty_print($maze, nil, nil), 0.1, true)
-          f_print(["--- MAZE COMPLETE... ---\n"], 0, false)
-
-          # return to main
-          return
-        end
-        # exit request
-      elsif (inp =~ /q(uit)?/)
+      if (inp =~ /1+/) # valid input (rDFS)
+        algo = 1
+      elsif (inp =~ /2+/) # valid input (rKruskal)
+        algo = 2
+      elsif (inp =~ /q(uit)?/) # exit request
         return
-        # invalid input
-      else
-        puts "hmmm, I can't understand that, try again..." +
-               "or type <quit> to quit maze creation"
+      else # invalid input
+        puts "hmmm, " + "I can't understand that".light_red +
+               ", try again...or type <quit> to quit maze creation"
+        next
+      end
+
+      while (true)
+        # specify instructions for inputting dimensions
+        puts
+        f_print(CREATE_INS, 0, true)
+        print "\n=> "
+
+        # retrieve input
+        inp = STDIN.gets.chomp.downcase
+
+        # valid input
+        if (inp =~ /([0-9]+)\s?([0-9]+)?/)
+          puts
+          f_print(["--- CREATING MAZE... ---\n"], 0, false)
+          while (true)
+            start_t = Time.now
+            case algo
+            when 1
+              # create graph using randomized DFS
+              $maze = Maze.new(create_rDFS($1.to_i, ($2 ? $2.to_i : $1.to_i)))
+            when 2
+              # create graph using randomized Kruskal's
+              $maze = Maze.new(
+                create_rKruskal($1.to_i, ($2 ? $2.to_i : $1.to_i))
+              )
+            end
+            end_t = Time.now
+
+            # recreate maze if unsolvable
+            if (!$maze.solvable) then next end
+
+            # print result maze
+            f_print(pretty_print($maze, nil, nil), 0.1, true)
+            f_print(["Finished in: #{(end_t.to_f - start_t.to_f).round(4)}s\n"],
+                    0.1, false)
+            f_print(["--- MAZE COMPLETE... ---\n"], 0, false)
+
+            # return to main
+            return
+          end
+          # exit request
+        elsif (inp =~ /q(uit)?/)
+          break
+          # invalid input
+        else
+          puts "hmmm, " + "I can't understand that".light_red +
+                 ", try again...or type <quit> to select another algorithm"
+        end
       end
     end
   end
@@ -405,7 +454,8 @@ module MazeRunner
   # @return [void]
   def solve
     # determine is maze is solvable
-    if (!($maze.solvable)) then puts "Maze is not solvable\n"; return end
+    if (!($maze.solvable)) then puts "Maze is " + "not solvable".light_red +
+                                       "\n"; return     end
 
     f_print(["--- SOLVING MAZE... ---\n"], 0.1, false)
 
@@ -428,50 +478,50 @@ include MazeRunner
 
 # Main entry point of the game.
 #
-# As the game starts, the player must first create a maze. Once a maze object 
-# is created, more commands are presented to the player that allows them to 
+# As the game starts, the player must first create a maze. Once a maze object
+# is created, more commands are presented to the player that allows them to
 # interact with it.
 #
 # @return [void]
 def main
   inp = "man"
   while (true)
-    if ($maze.nil?)                         # create a maze
+    if ($maze.nil?) # create a maze
       create()
-      if ($maze.nil?)                       # quit game during maze creation
-        puts "but we barely got to know each other :("
+      if ($maze.nil?) # quit game during maze creation
+        puts "but we " + "barely".light_red + " got to know each other :("
         return
-      else                                  # maze creation successful
-        delay(1)
+      else # maze creation successful
+        delay(2)
         puts
         f_print(GAME_INS, 0, true)
       end
     else
       case inp
-      when "man"                            # <man>: show manual
+      when "man" # <man>: show manual
         puts
         f_print(GAME_INS, 0, true)
-      when "play"                           # <play>: initiate game session
+      when "play" # <play>: initiate game session
         play()
         puts
         f_print(GAME_INS, 0, true)
-      when "new"                            # <new>: create a new maze
+      when "new" # <new>: create a new maze
         $maze = nil
         next
-      when "print"                          # <print>: prints preview of maze
+      when "print" # <print>: prints preview of maze
         puts
         print_maze
         puts
-      when "solve"                          # <solve>: prints solution of maze
+      when "solve" # <solve>: prints solution of maze
         puts
         solve
         puts
-      when "quit"                           # <quit> quits game
-        puts "bye bye. see you again soon :D\n\n"
+      when "quit" # <quit> quits game
+        puts "bye bye. " + "see you again soon".light_green + " :D\n\n"
         return
-      else                                  # invalid input
-        puts "oops, command not found. " +
-               "type <man> to know more about valid commands"
+      else # invalid input
+        puts "oops, " + "command not found".light_red +
+               ". type <man> to know more about valid commands"
       end
     end
 

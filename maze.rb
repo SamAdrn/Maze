@@ -59,12 +59,10 @@ module MazeGenerator
   #   Reference to DFS algorithm (wikipedia)
   def create_rDFS(h, w)
     # initialize maze with all walls
-    graph = []
-    0.upto(h - 1) { |i| graph[i] = Array.new(w) { [] } }
+    graph = Array.new(h) { Array.new(w) { [] } }
 
     # initialize starting cell
-    sx = rand(w / 2)
-    sy = rand(h / 2)
+    sx, sy = rand(w / 2), rand(h / 2)
 
     # initialize stack and visited array and add starting cell
     stack = [[sx, sy]]
@@ -77,11 +75,10 @@ module MazeGenerator
       # check for unvisited neighbours
       unvis = []
       A_DIRS.each do |dir|
-        nx = cur[0] + CALC_DIR_X[dir]
-        ny = cur[1] + CALC_DIR_Y[dir]
+        nx, ny = cur[0] + CALC_DIR_X[dir], cur[1] + CALC_DIR_Y[dir]
         if ((nx >= 0) && (nx < w) && (ny >= 0) && (ny < h) &&
             !visited.include?([nx, ny]))
-          unvis << dir
+          unvis << [nx, ny, dir]
         end
       end
 
@@ -92,20 +89,110 @@ module MazeGenerator
       stack.push(cur)
 
       # obtain a random direction and add edge from cur -> neighbour
-      dir = unvis.sample
-      nx = cur[0] + CALC_DIR_X[dir]
-      ny = cur[1] + CALC_DIR_Y[dir]
-      graph[cur[1]][cur[0]] << dir
-      graph[ny][nx] << OP_DIRS[dir]
+      n = unvis.sample
+      graph[cur[1]][cur[0]] << n[2]
+      graph[n[1]][n[0]] << OP_DIRS[n[2]]
 
       # mark chosen cell as visited and push to stack
-      visited << [nx, ny]
-      stack.push([nx, ny])
+      visited << [n[0], n[1]]
+      stack.push([n[0], n[1]])
     end
 
     # initialize ending point
-    ex = rand((w / 2)..(w - 1))
-    ey = rand((h / 2)..(h - 1))
+    ex, ey = rand((w / 2)..(w - 1)), rand((h / 2)..(h - 1))
+
+    return graph, [sx, sy], [ex, ey]
+  end
+
+  # Creates a new maze using Randomized Kruskal's Algorithm
+  #
+  # The algorithm generates a new maze by generating a minimum spanning forest
+  # within the maze.
+  #
+  # The graph is first initialized based on the height +h+ and width +w+
+  # specified by the parameters and with no pathways available. When traversing
+  # through the vertices, it treats every cell in the maze as a root of a tree,
+  # joining them together with its surrounding neighbours. If two roots are not
+  # part of the same tree, then the wall between them is removed and they
+  # connect to become part of the same minimum spanning tree. Otherwise, we 
+  # should not process the vertex since we do not want to create cycles (since 
+  # they will not be a minimum spanning tree in that case). At the point in
+  # which all vertices are processed, the maze will have a bunch of minimum
+  # spanning trees that represent pathways. It will then initialize a random 
+  # cell, somewhere in the fourth quadrant, to be the *starting* *point*, and
+  # another cell, somewhere in the second quadrant, to be the *ending* *point*.
+  #
+  # The trees are maintained by a +buckets+ hash, which maps the root of the
+  # tree to an array of its descending nodes. However, note that every vertex is
+  # treated as a root, so multiple keys may correspond to the same tree.
+  #
+  # Since this algorithm randomly creates MSTs from various points, mazes
+  # generated generally have a *high* *branching* *factor*. There would be a lot 
+  # places to move around from one cell, but this also means that it has a low
+  # river factor, and will tend to have a lot of dead ends. Some areas may not 
+  # even be accessible from the starting point. 
+  #
+  # @param h [Integer] the height of the maze
+  # @param w [Integer] the width of the maze
+  #
+  # @return [graph, starting point, ending point] an array consisting of the
+  #   following values:
+  #   1. graph +Array<Array<Array<Integer>>>+: an adjacency matrix representing
+  #      the graph structure of the maze, as described by {#MazeData::Maze}
+  #   2. starting point +Array(Integer, Integer)+: the start point of the maze
+  #   3. ending point +Array(Integer, Integer)+: the end point of the maze
+  #
+  # @see https://en.wikipedia.org/wiki/Maze_generation_algorithm#Randomized_kruskal\'s_algorithm
+  #   Reference to Kruskal's algorithm (wikipedia)
+  def create_rKruskal(h, w)
+    # initialize maze with all walls, buckets for every vertex, and an array
+    # of vertices to process
+    graph, buckets, vertices = [], {}, []
+    # buckets = {}
+    # vertices = []
+    0.upto(h - 1) do |y|
+      graph[y] = Array.new(w) { [] }
+      0.upto(w - 1) do |x|
+        buckets[[x, y]] = []
+        vertices << [x, y]
+      end
+    end
+
+    while (!vertices.empty?)
+      # retrieve a random vertex and remove it to prevent double processing
+      cur = vertices.sample
+      vertices.delete(cur)
+
+      # retrieve available neighbours
+      unvis = []
+      A_DIRS.each do |dir|
+        nx = cur[0] + CALC_DIR_X[dir]
+        ny = cur[1] + CALC_DIR_Y[dir]
+        if ((nx >= 0) && (nx < w) && (ny >= 0) && (ny < h) &&
+            !graph[cur[1]][cur[0]].include?(dir))
+          unvis << [nx, ny, dir]
+        end
+      end
+
+      # check if there are valid neighbours
+      if (!unvis.empty?)
+        # retrieve a random neighbour, and check if it is connected to cur
+        n = unvis.sample
+        if (!buckets[[n[0], n[1]]].include?(cur))
+          # connect cells in maze
+          graph[cur[1]][cur[0]] << n[2]
+          graph[n[1]][n[0]] << OP_DIRS[n[2]]
+
+          # connect both buckets
+          buckets[cur] << [n[0], n[1]]
+          buckets[[n[0], n[1]]] << cur
+        end
+      end
+    end
+
+    # initialize starting and ending cell
+    sx, sy = rand(w / 2), rand(h / 2)
+    ex, ey = rand((w / 2)..(w - 1)), rand((h / 2)..(h - 1))
 
     return graph, [sx, sy], [ex, ey]
   end
@@ -148,6 +235,21 @@ module MazeGenerator
   # @return [void]
   def debug_path(path)
     path.each { |p| print "(#{p[0]}, #{p[1]}) " }
+    puts
+  end
+
+  # Debugger method to display the contents of an array
+  #
+  # @param arr [Array<Array>, Array]
+  #
+  # @return [void]
+  def debug_norm_arr(arr)
+    arr.each { |e|
+      if (e.is_a?(Array))
+        e.each { |e2| print "#{e2} " }
+        puts
+      else print "#{e} "       end
+    }
     puts
   end
 end
@@ -198,7 +300,7 @@ module MazeData
     #   [x, y]
     attr_reader :endpoint
 
-    # Holds a +Boolean+ value indicating whether there is a solution for this 
+    # Holds a +Boolean+ value indicating whether there is a solution for this
     # maze.
     attr_reader :solvable
 
@@ -219,7 +321,7 @@ module MazeData
     # figuring out the shortest path solution, and determine if the maze is
     # solvable.
     #
-    # @param data [graph, starting point, ending point] an array consisting of 
+    # @param data [graph, starting point, ending point] an array consisting of
     #   the following values:
     #   1. graph +Array<Array<Array<Integer>>>+: an adjacency matrix
     #      representing the graph structure of the maze.
@@ -248,10 +350,8 @@ module MazeData
     # - +3+: Ending Point
     def init_arr
       # initialize array
-      arr_h = ((@graph.length) * 2) + 1
-      arr_w = ((@graph[0].length) * 2) + 1
-      arr = []
-      0.upto(arr_h - 1) { |i| arr[i] = Array.new(arr_w, 0) }
+      arr_h, arr_w = ((@graph.length) * 2) + 1, ((@graph[0].length) * 2) + 1
+      arr = Array.new(arr_h) { Array.new(arr_w) { 0 } }
 
       # --------------- process maze ---------------
       0.upto(@graph.length - 1) do |y|
@@ -283,36 +383,34 @@ module MazeData
   # Finds the shortest path solution between the starting point and the
   # ending point of the maze.
   #
-  # The greedy algorithm implements a queue structure to keep track of cells 
-  # while traversing through every path within the maze. It also keeps a track 
-  # of distances from the starting point to every cell within the maze. If it 
-  # finds that there is a shorter path to get from the starting point to a 
-  # specific cell, it will update its distance value to the shorter distance, 
+  # The greedy algorithm implements a queue structure to keep track of cells
+  # while traversing through every path within the maze. It also keeps a track
+  # of distances from the starting point to every cell within the maze. If it
+  # finds that there is a shorter path to get from the starting point to a
+  # specific cell, it will update its distance value to the shorter distance,
   # and update its predecessor to become the currently-tracked cell. By the time
-  # this algorithm is complete, the +predecessors+ hash will be useful in 
+  # this algorithm is complete, the +predecessors+ hash will be useful in
   # retrieving the shortest pathway. Since we only care about its path from the
-  # starting point to the end, the two hash structures (+distances+ and 
+  # starting point to the end, the two hash structures (+distances+ and
   # +predecessors+) are garbage-collected.
   #
   # The queue structure here is treated as a priority queue, which represents
-  # a min-heap using the distances from the starting point as the priority 
+  # a min-heap using the distances from the starting point as the priority
   # values. However, it is not exactly a priority queue since it simply
   # traverses through the +distances+ hash to find the cell with the lowest
   # distance value.
   # @todo implement a priority queue into this algorithm
   #
-  # @return [Boolean, Array<Array(Integer, Integer)>] an array consisting of 
+  # @return [Boolean, Array<Array(Integer, Integer)>] an array consisting of
   #   the following values:
   #   1. solvable +Boolean+: indicates whether the maze is solvable
-  #   2. shortest_p +Array<Array(Integer, Integer)>+: an array of +Integer+ 
+  #   2. shortest_p +Array<Array(Integer, Integer)>+: an array of +Integer+
   #      pairs, where each pair represents a valid cell within the maze, and
   #      the pairs are sorted in pathway-like order from the starting point to
   #      the ending point
   def dijkstra
-    distances = {}       # a hash of distances
-    predecessors = {}    # a hash of predecessors
-    queue = []           # a queue of cells to visit
-
+    # initialize data structures
+    distances, predecessors, queue = {}, {}, []
     # initialize data structures
     0.upto(@graph.length - 1) do |y|
       0.upto(@graph[0].length - 1) do |x|

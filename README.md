@@ -54,7 +54,7 @@ But if you are having trouble, you can have the game *show you da way*.
 ### Starting Up
 At the start of the game, you will be instructed to choose an algorithm for the maze you want to create.
 
-<img src="screenshots/choose-algo.png" alt="choosing an algorithm screenshot" width="900">
+<img src="screenshots/choose_algo.png" alt="choosing an algorithm screenshot" width="900">
 
 Each algorithm produces its own kind of maze texture:
 1. **Randomized Depth-First Search**: High *River* Factor. Has long corridors since it traverses as deep as it can before backtracking.

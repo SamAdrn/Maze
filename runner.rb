@@ -44,8 +44,11 @@ module MazeRunner
      "h".light_red + "> <" + "w".light_green + ">." +
      "       |\n",
      "|                                                               |\n",
-     "| (Note that heights are displayed 2x larger than widths. It is |\n",
-     "| recommended that the maze be half as tall as its width)       |\n",
+     "| Note that heights are displayed 2x larger than widths. It is  |\n",
+     "| recommended that the maze be half as tall as its width.       |\n",
+     "|                                                               |\n",
+     "| Maze dimensions must also be " + "at least a 2x2".light_magenta + 
+     ".                  |\n",
      "+===============================================================+\n"]
 
   # Displays instructions once a maze has been successfully created. The player
@@ -251,6 +254,12 @@ module MazeRunner
 
         # valid input
         if (inp =~ /([0-9]+)\s?([0-9]+)?/)
+        if ($1.to_i < 2 && ($2.nil? || $2.to_i < 2))
+            puts "Dimensions are " + "too small".light_red +
+                 ".\nPlease try enter a value " + "greater than 1".light_green + 
+                 "...or type <quit> to select another algorithm"
+            next
+        end
           puts
           f_print(["--- CREATING MAZE... ---\n"], 0, false)
           while (true)

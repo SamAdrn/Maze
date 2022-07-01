@@ -17,7 +17,7 @@
   ```
   Unix systems may require `sudo`. <a href="https://github.com/fazibear/colorize" target="_blank">Link to repo (github.com/fazibear)</a>.
   
-<br><hr>
+<br>
 
 ### Running the Game Locally
 
@@ -49,7 +49,7 @@ But if you are having trouble, you can have the game *show you da way*.
 
 <img src="screenshots/maze-solving.png" alt="solving a maze automatically screenshot" width="800">
 
-<br><hr>
+<br>
 
 ### Starting Up
 At the start of the game, you will be instructed to choose an algorithm for the maze you want to create.
@@ -83,7 +83,7 @@ From here, you are able to choose between various commands that interact with th
 
 <img src="screenshots/avai_commands.png" alt="available commands screenshot" width="900">
 
-<br><hr>
+<br>
 
 ### Documentation
 
@@ -104,6 +104,6 @@ You can then open the web document using the following command:
 open doc/top-level-namespace.html 
 ```      
 
-<br><hr>
+<br>
 
 > Written [07/01/2022]

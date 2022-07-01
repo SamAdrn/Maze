@@ -39,7 +39,7 @@ module MazeGenerator
   # low branching factors. This is due to its characteristic of traversing as
   # far as it can through a single branch before backtracking. As a result,
   # there will not be many unvisited cells left to process at the point it
-  # starts to backtrack, creating many short dead ends.
+  # starts to backtrack, creating less and shorter dead ends.
   #
   # Rather than enlarging a potentially limited number of stack frames, this
   # algorithm maintains an explicit stack. This allows tracking more cells

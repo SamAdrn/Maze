@@ -36,7 +36,7 @@ ruby runner.rb
 
 <br>
 
-## The Game
+## Usage
 ### Welcome to **MAZE GAME**
 
 <img src="screenshots/maze-gameplay.png" alt="gameplay screenshot" width="800">
@@ -66,7 +66,7 @@ Then, you can specify the size of your mazes:
 
 <img src="screenshots/specify_size.png" alt="specify maze sizes screenshot" width="900">
 
-* Mazes must at least be a `2 x 2` (there's no point in having smaller mazes really).
+* Mazes must be at least a `2 x 2` (there's no point in having smaller mazes really).
 * Heights are displayed larger than widths. A maze with the dimensions `(w / 2) x w` will resemble a square.
 
 <br>
@@ -75,7 +75,7 @@ Now, the game knows exactly what you want and will create a random maze for you 
 
 <img src="screenshots/maze-creation.png" alt="maze creation screenshot" width="900">
 
-*  Note that these algorithms may not create a solvable maze in the first try, and it may re-run the algorithm over and over again until it creates on that is solvable. Therefore, larger mazes may take more time to complete.
+*  Note that these algorithms may not create a solvable maze in the first try, and it may re-run the algorithm over and over again until it creates one that is solvable. Therefore, larger mazes may take more time to complete.
 
 <br>
 
